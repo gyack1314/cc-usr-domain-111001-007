@@ -1,0 +1,6 @@
+{
+  "GET /tasks": "返回合成任务",
+  "GET /north,/south": "按responses.json逐次响应，末项保持",
+  "sample_plugin": "同步fetch(task,base_url)返回status,headers,body；调度器可包装但保持参数",
+  "time": "逻辑秒，可注入时钟；HTTP-date以UTC解析"
+}

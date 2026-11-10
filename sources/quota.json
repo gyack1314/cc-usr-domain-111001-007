@@ -1,0 +1,17 @@
+{
+  "groups": {
+    "vendor": {
+      "capacity": 3,
+      "rate": 1
+    }
+  },
+  "source_concurrency": {
+    "north": 1,
+    "south": 1
+  },
+  "backoff": {
+    "base": 1,
+    "cap": 16,
+    "max_retries": 3
+  }
+}

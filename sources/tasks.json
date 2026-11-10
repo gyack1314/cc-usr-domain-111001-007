@@ -1,0 +1,30 @@
+[
+  {
+    "task_id": "t1",
+    "source": "north",
+    "quota_group": "vendor",
+    "path": "/north",
+    "cost": 2,
+    "priority": 0,
+    "not_before": 0
+  },
+  {
+    "task_id": "t2",
+    "source": "south",
+    "quota_group": "vendor",
+    "path": "/south",
+    "cost": 1,
+    "priority": 3,
+    "not_before": 0
+  },
+  {
+    "task_id": "t3",
+    "source": "north",
+    "quota_group": "vendor",
+    "path": "/north",
+    "cost": 1,
+    "priority": 0,
+    "not_before": 0,
+    "deadline": 12
+  }
+]

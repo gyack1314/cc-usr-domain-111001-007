@@ -1,0 +1,31 @@
+{
+  "/north": [
+    {
+      "status": 429,
+      "headers": {
+        "Retry-After": "4"
+      },
+      "body": {
+        "error": "共享额度耗尽"
+      }
+    },
+    {
+      "status": 200,
+      "body": {
+        "records": [
+          "北区"
+        ]
+      }
+    }
+  ],
+  "/south": [
+    {
+      "status": 200,
+      "body": {
+        "records": [
+          "南区"
+        ]
+      }
+    }
+  ]
+}
