@@ -23,12 +23,44 @@ python -m source_site --port 8090
 python -c 'import urllib.request; r=urllib.request.Request("http://127.0.0.1:8090/__control", data=b"{\"phase\":\"base\"}", headers={"Content-Type":"application/json"}); print(urllib.request.urlopen(r).read().decode())'
 ```
 
-## 开发检查
+## 请求调度层（scheduler 包）
 
-以下检查覆盖来源协议、异常响应和真实本地 HTTP 启动。检查不会要求访问公网，也不会写入业务状态目录。
+`scheduler/` 在不改动采集插件解析器的前提下，提供统一请求调度。插件仍以
+`submit(task)` 提交任务，`sample_plugin.fetch(task, base_url)` 的签名与
+返回三元组保持不变，由 `PluginSender` 适配为发送器接口；需要在途语义时
+再用 `ThreadedSender` 包装。
+
+- 令牌桶按 `quota_group` 配置容量与每秒补充速率，同组跨 source 共享；
+  仅在请求真正进入发送器前扣费，排队取消与过期不收费，已发送失败不退款；
+  `cost` 超过组容量入队即返回 `REJECTED`。
+- source 配置并发上限；同优先级来源轮转、来源内按入队顺序；低优先级每
+  等待 10 逻辑秒老化一级，封顶 3，原始优先级 0..3。
+- `not_before`/`deadline` 由可注入时钟（`ManualClock`/`SystemClock`）驱动；
+  超过 deadline 且未发送的任务结束为 `EXPIRED`，不占用连接。
+- 429/503 的 `Retry-After`（delta-seconds 或 HTTP-date，UTC 解析）产生
+  组级冷却，在途请求允许结束，冷却期同组另一域名不能偷跑；无合法
+  Retry-After 时按 `backoff.base/cap` 指数退避，`max_retries` 耗尽转失败。
+  连接失败与 HTTP 响应共用同一重试预算，但不触发组冷却。
+- 结果按 `task_id` 幂等接收；重启后在途任务转为 `PENDING_VERIFICATION`，
+  由插件通过 `verify_decision(task_id, "retry"|"abandon")` 决定，不会自动重发。
+- 持久化为原子 JSON（临时文件 + `os.replace`），落盘全部使用 UTC 绝对秒；
+  单调时钟仅用于进程内。重启以新锚点按 `max(0, wall_now - wall_saved)`
+  计算流逝，墙钟回退时流逝为 0，不凭空补 token、不提前结束冷却。
+
+演示与联调（均不需要真实等待或外网凭据）：
 
 ```sh
-python -m unittest discover -s tests -v
+python -I demo.py               # 虚拟时钟：共享额度/插队/老化/过期/组冷却/重启
+python -I http_integration.py   # 起两个本地来源实例做真实 HTTP 联调
+```
+
+## 开发检查
+
+以下检查覆盖来源协议、异常响应、真实本地 HTTP 启动以及调度层全部不变量。
+检查不会要求访问公网，也不会写入业务状态目录（持久化测试使用临时目录）。
+
+```sh
+python -I -m unittest discover -s tests -t . -v
 python -m compileall -q .
 ```
 
